@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { Alert, App as AntApp, Button, Card, DatePicker, Form, Input, InputNumber, Modal, Popconfirm, Select, Space, Switch, Table, Tag, Typography } from 'antd';
 import type { TableColumnsType } from 'antd';
 import dayjs, { type Dayjs } from 'dayjs';
-import { useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import FilterBar from '../components/common/FilterBar';
 import FireLevelTag from '../components/common/FireLevelTag';
 import RatioCalculator from '../components/common/RatioCalculator';
@@ -83,11 +83,13 @@ export default function BatchBoard() {
   const visibleBatches = useMemo(() => {
     const ids = new Set(visibleHerbs.map((h) => h.id));
     return batches.filter((b) => {
+      if (b.reviewState === 'pending') return false;
       if (!ids.has(b.herbId)) return false;
       if (degreeParam && b.degree !== degreeParam) return false;
       return true;
     });
   }, [batches, visibleHerbs, degreeParam]);
+  const pendingDuplicates = useMemo(() => batches.filter((b) => b.reviewState === 'pending'), [batches]);
 
   const herbName = (id: string) => herbs.find((h) => h.id === id)?.name ?? '未知药材';
   const methodOf = (id: string) => methods.find((m) => m.id === id);
@@ -131,8 +133,8 @@ export default function BatchBoard() {
       auxUsedKg: record.auxUsedKg,
       outputKg: Number(((record.feedKg * record.yieldRate) / 100).toFixed(1)),
       fireLevel: record.fireLevel,
-      temp: suggested ? Math.round((suggested.tempRange[0] + suggested.tempRange[1]) / 2) : 100,
-      duration: suggested?.duration ?? 12,
+      temp: record.actualTemp ?? (suggested ? Math.round((suggested.tempRange[0] + suggested.tempRange[1]) / 2) : 100),
+      duration: record.durationMin ?? suggested?.duration ?? 12,
       startedAt: dayjs(record.startedAt),
       endedAt: dayjs(record.endedAt),
       operator: record.operator,
@@ -158,6 +160,8 @@ export default function BatchBoard() {
       feedKg,
       auxUsedKg: Number(values.auxUsedKg) || 0,
       fireLevel: values.fireLevel,
+      actualTemp: Number(values.temp),
+      durationMin: Number(values.duration),
       startedAt: values.startedAt.toISOString(),
       endedAt: values.endedAt.toISOString(),
       yieldRate,
@@ -187,10 +191,17 @@ export default function BatchBoard() {
     { title: '药材', dataIndex: 'herbId', width: 90, render: (id: string) => herbName(id) },
     { title: '方法', dataIndex: 'methodId', width: 90, render: (id: string) => methodOf(id)?.name ?? '-' },
     {
-      title: '火候',
+      title: '火候 / 实测',
       dataIndex: 'fireLevel',
-      width: 180,
-      render: (v: FireLevel, record) => <FireLevelTag level={v} tempRange={methodOf(record.methodId)?.tempRange} duration={methodOf(record.methodId)?.duration} />,
+      width: 220,
+      render: (v: FireLevel, record) => (
+        <Space direction="vertical" size={0}>
+          <FireLevelTag level={v} tempRange={methodOf(record.methodId)?.tempRange} duration={methodOf(record.methodId)?.duration} />
+          <Text type="secondary" style={{ fontSize: 12 }}>
+            实测 {record.actualTemp ?? '—'}℃ · {record.durationMin ?? '—'}min
+          </Text>
+        </Space>
+      ),
     },
     { title: '投料(kg)', dataIndex: 'feedKg', width: 90, align: 'right' },
     { title: '辅料(kg)', dataIndex: 'auxUsedKg', width: 90, align: 'right' },
@@ -262,6 +273,33 @@ export default function BatchBoard() {
             ]}
           />
         </Card>
+      ) : null}
+
+      {pendingDuplicates.length > 0 ? (
+        <Alert
+          style={{ marginBottom: 12 }}
+          type="warning"
+          showIcon
+          message={`交接对账产生 ${pendingDuplicates.length} 条同批号差异副本（锅温/时长/程度/观察不一致），正本未被覆盖`}
+          description={
+            <div>
+              <Space wrap style={{ marginBottom: 8 }}>
+                {pendingDuplicates.map((d) => (
+                  <Tag key={d.id} color="gold">
+                    {d.batchNo}（{d.handoffFrom ?? '交接包'}）· {d.actualTemp ?? '—'}℃ / {d.durationMin ?? '—'}min / {d.degree}
+                  </Tag>
+                ))}
+              </Space>
+              <div>
+                <Link to="/handoff">
+                  <Button size="small" type="primary">
+                    前往交接对账复核
+                  </Button>
+                </Link>
+              </div>
+            </div>
+          }
+        />
       ) : null}
 
       <FilterBar

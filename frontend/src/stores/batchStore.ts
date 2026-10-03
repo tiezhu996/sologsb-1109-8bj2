@@ -11,6 +11,8 @@ export interface BatchInput {
   feedKg: number;
   auxUsedKg: number;
   fireLevel: FireLevel;
+  actualTemp?: number;
+  durationMin?: number;
   startedAt: string;
   endedAt: string;
   yieldRate: number;
@@ -53,6 +55,8 @@ export const useBatchStore = create<BatchState>()((set, get) => ({
       feedKg: Number(input.feedKg) || 0,
       auxUsedKg: Number(input.auxUsedKg) || 0,
       fireLevel: input.fireLevel,
+      actualTemp: input.actualTemp,
+      durationMin: input.durationMin,
       startedAt: input.startedAt,
       endedAt: input.endedAt,
       yieldRate: Number(input.yieldRate) || 0,
@@ -61,6 +65,7 @@ export const useBatchStore = create<BatchState>()((set, get) => ({
       locked: lock,
       lockedAt: lock ? new Date().toISOString() : undefined,
       remark: input.remark?.trim() || undefined,
+      reviewState: 'normal',
     };
     await db.batches.put(batch);
     set({ batches: [batch, ...get().batches] });

@@ -8,6 +8,7 @@ import { useHerbStore } from '../stores/herbStore';
 import { useMethodStore } from '../stores/methodStore';
 import { useBatchStore } from '../stores/batchStore';
 import { useSampleStore } from '../stores/sampleStore';
+import { useHandoffStore } from '../stores/handoffStore';
 import { dueSamples, formatDate } from '../utils/degree';
 import type { ProcessBatch } from '../types/process-batch';
 import type { SampleExpiry } from '../types/retain-sample';
@@ -20,8 +21,18 @@ export default function ProcessBoard() {
   const methods = useMethodStore((s) => s.methods);
   const batches = useBatchStore((s) => s.batches);
   const samples = useSampleStore((s) => s.samples);
+  const handoffPkgs = useHandoffStore((s) => s.packages);
 
-  const pending = useMemo(() => batches.filter((b) => !b.locked), [batches]);
+  const pendingReviewItems = useMemo(
+    () => handoffPkgs.flatMap((p) => p.items.filter((i) => i.state === 'reviewing')),
+    [handoffPkgs],
+  );
+  const blockedItems = useMemo(
+    () => handoffPkgs.flatMap((p) => p.items.filter((i) => i.state === 'blocked')),
+    [handoffPkgs],
+  );
+
+  const pending = useMemo(() => batches.filter((b) => !b.locked && b.reviewState !== 'pending'), [batches]);
   const due = useMemo(() => dueSamples(samples, 30), [samples]);
   const degreeCount = useMemo(() => {
     return batches.reduce(
@@ -130,6 +141,34 @@ export default function ProcessBoard() {
               <Link to="/samples">
                 <Button size="small" type="link">
                   前往留样台账处理
+                </Button>
+              </Link>
+            </Space>
+          }
+        />
+      ) : null}
+
+      {pendingReviewItems.length + blockedItems.length > 0 ? (
+        <Alert
+          style={{ marginBottom: 16 }}
+          type={pendingReviewItems.length > 0 ? 'warning' : 'info'}
+          showIcon
+          message={`平板交接对账：${pendingReviewItems.length} 条两版待复核，${blockedItems.length} 条缺档案阻塞`}
+          description={
+            <Space wrap>
+              {pendingReviewItems.slice(0, 6).map((i) => (
+                <Tag key={`${i.kind}-${i.refId}`} color="gold">
+                  {i.kind === 'batch' ? '工序' : '留样'} {i.label}
+                </Tag>
+              ))}
+              {blockedItems.slice(0, 4).map((i) => (
+                <Tag key={`${i.kind}-${i.refId}`} color="orange">
+                  缺档案 · {i.label}
+                </Tag>
+              ))}
+              <Link to="/handoff">
+                <Button size="small" type="primary">
+                  前往交接对账
                 </Button>
               </Link>
             </Space>

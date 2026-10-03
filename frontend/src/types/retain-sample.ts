@@ -15,6 +15,9 @@ export interface ObserveLog {
   note?: string;
 }
 
+/** 复核状态：normal=正本；pending=交接差异副本，两版并存待复核 */
+export type SampleReviewState = 'normal' | 'pending';
+
 /** 留样 */
 export interface RetainSample {
   id: string;
@@ -32,6 +35,16 @@ export interface RetainSample {
   retainedAt: string;
   /** 观察记录，按日期追加 */
   observeLogs: ObserveLog[];
+  /** 复核状态，默认正本 */
+  reviewState?: SampleReviewState;
+  /** 待复核副本：对应正本留样 id */
+  duplicateOf?: string;
+  /** 副本来源交接包 id */
+  handoffPackageId?: string;
+  /** 交接来源（平板/班组） */
+  handoffFrom?: string;
+  /** 平板原始 id，便于同包续接幂等 */
+  handoffRefId?: string;
 }
 
 /** 留样柜位（A/B/C 三柜，每柜 12 位） */

@@ -58,11 +58,12 @@ function buildSeedBatches(): ProcessBatch[] {
     const endedAt = isoMinutesAgo(45 * (index + 1));
     const startedAt = new Date(new Date(endedAt).getTime() - duration * 60_000).toISOString();
     const yieldRate = Number((expectedYieldOf(method) + ((index % 5) - 2) * 0.8).toFixed(1));
+    const actualTemp = Math.round((method.tempRange[0] + method.tempRange[1]) / 2) + ((index % 3) - 1) * 3;
     const verdict = judgeDegree({
       method,
       fireLevel: fireLevel as ProcessBatch['fireLevel'],
       duration,
-      temp: Math.round((method.tempRange[0] + method.tempRange[1]) / 2),
+      temp: actualTemp,
       yieldRate,
     });
     const locked = index >= 2;
@@ -74,6 +75,8 @@ function buildSeedBatches(): ProcessBatch[] {
       feedKg,
       auxUsedKg,
       fireLevel: fireLevel as ProcessBatch['fireLevel'],
+      actualTemp,
+      durationMin: duration,
       startedAt,
       endedAt,
       yieldRate,
@@ -83,6 +86,7 @@ function buildSeedBatches(): ProcessBatch[] {
       lockedAt: locked ? new Date(new Date(endedAt).getTime() + 30 * 60_000).toISOString() : undefined,
       qcBy: locked ? '质检员 · 赵敏' : undefined,
       remark,
+      reviewState: 'normal' as const,
     };
   });
 }
@@ -112,6 +116,7 @@ function buildSeedSamples(batches: ProcessBatch[]): RetainSample[] {
         logs(new Date(retainedAt).toISOString().slice(0, 10), '色泽符合标准', '气味正常', '无霉变', '赵敏'),
         logs(new Date(Date.now() - (index * 11 + 2) * 86_400_000).toISOString().slice(0, 10), '色泽略深', '气味正常', '无霉变', '赵敏'),
       ],
+      reviewState: 'normal' as const,
     };
   });
 }

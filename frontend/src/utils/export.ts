@@ -54,29 +54,11 @@ export function downloadCsv<T extends Record<string, unknown>>(filename: string,
   downloadText(filename, `\ufeff${header}\n${body}`, 'text/csv');
 }
 
-/** 恢复 JSON 备份 */
-export async function importBackup(text: string): Promise<{ herbs: number; methods: number; batches: number; samples: number }> {
-  const payload = JSON.parse(text) as Partial<BackupPayload>;
-  if (!payload || payload.app !== 'gbherbprocess') {
-    throw new Error('备份文件格式不匹配（缺少 app=gbherbprocess 标记）');
-  }
-  const counts = {
-    herbs: payload.herbs?.length ?? 0,
-    methods: payload.methods?.length ?? 0,
-    batches: payload.batches?.length ?? 0,
-    samples: payload.samples?.length ?? 0,
-  };
-  await db.transaction('rw', db.herbs, db.methods, db.batches, db.samples, async () => {
-    await Promise.all([
-      db.herbs.clear(),
-      db.methods.clear(),
-      db.batches.clear(),
-      db.samples.clear(),
-    ]);
-    if (payload.herbs?.length) await db.herbs.bulkPut(payload.herbs as never[]);
-    if (payload.methods?.length) await db.methods.bulkPut(payload.methods as never[]);
-    if (payload.batches?.length) await db.batches.bulkPut(payload.batches as never[]);
-    if (payload.samples?.length) await db.samples.bulkPut(payload.samples as never[]);
-  });
-  return counts;
+/**
+ * 已废弃：旧版「恢复备份」会 clear() 全表再覆盖，平板交接时会清空本机台账。
+ * 交接包请走增量对账（utils/handoff.stageHandoff）：先校验暂存、按批号/留样编号写入、差异两版复核。
+ * 保留此函数仅为拦截旧调用，明确拒绝整库覆盖。
+ */
+export async function importBackup(): Promise<never> {
+  throw new Error('整库导入已停用，请使用「交接对账」做增量写入，避免清空本机台账');
 }

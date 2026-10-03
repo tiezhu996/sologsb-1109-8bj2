@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react';
-import { App as AntApp, Button, Card, Col, DatePicker, Form, Input, InputNumber, Modal, Popconfirm, Row, Select, Space, Table, Tag, Typography } from 'antd';
+import { Alert, App as AntApp, Button, Card, Col, DatePicker, Form, Input, InputNumber, Modal, Popconfirm, Row, Select, Space, Table, Tag, Typography } from 'antd';
 import type { TableColumnsType } from 'antd';
 import dayjs, { type Dayjs } from 'dayjs';
+import { Link } from 'react-router-dom';
 import StatBadge from '../components/common/StatBadge';
 import CabinetGrid from '../components/common/CabinetGrid';
 import EmptyPanel from '../components/common/EmptyPanel';
@@ -49,7 +50,8 @@ export default function SampleLedger() {
   const [observeTarget, setObserveTarget] = useState<RetainSample | null>(null);
   const [observeForm] = Form.useForm<ObserveFormValues>();
 
-  const expiryList = useMemo(() => buildExpiryList(samples, 30), [samples]);
+  const expiryList = useMemo(() => buildExpiryList(samples, 30).filter((item) => item.sample.reviewState !== 'pending'), [samples]);
+  const pendingDuplicates = useMemo(() => samples.filter((s) => s.reviewState === 'pending'), [samples]);
   const dueList = useMemo(() => expiryList.filter((item) => item.daysLeft <= 30), [expiryList]);
   const expired = useMemo(() => expiryList.filter((item) => item.daysLeft < 0), [expiryList]);
 
@@ -191,6 +193,29 @@ export default function SampleLedger() {
           <StatBadge label="已到期" value={expired.length} unit="份" status={expired.length ? 'error' : 'success'} />
         </Col>
       </Row>
+
+      {pendingDuplicates.length > 0 ? (
+        <Alert
+          style={{ marginBottom: 16 }}
+          type="warning"
+          showIcon
+          message={`交接对账产生 ${pendingDuplicates.length} 条同留样编号差异副本（观察记录不一致），正本台账未改动`}
+          description={
+            <Space wrap>
+              {pendingDuplicates.map((d) => (
+                <Tag key={d.id} color="gold">
+                  {d.sampleNo}（{d.handoffFrom ?? '交接包'}）· 交接版 {d.observeLogs.length} 条观察
+                </Tag>
+              ))}
+              <Link to="/handoff">
+                <Button size="small" type="primary">
+                  前往交接对账复核 / 合并观察
+                </Button>
+              </Link>
+            </Space>
+          }
+        />
+      ) : null}
 
       <Card
         size="small"
