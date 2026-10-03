@@ -11,6 +11,10 @@ export interface BatchInput {
   feedKg: number;
   auxUsedKg: number;
   fireLevel: FireLevel;
+  /** 实际锅温（℃） */
+  potTempC?: number;
+  /** 实际炮制时长（min） */
+  durationMin?: number;
   startedAt: string;
   endedAt: string;
   yieldRate: number;
@@ -53,6 +57,8 @@ export const useBatchStore = create<BatchState>()((set, get) => ({
       feedKg: Number(input.feedKg) || 0,
       auxUsedKg: Number(input.auxUsedKg) || 0,
       fireLevel: input.fireLevel,
+      potTempC: input.potTempC,
+      durationMin: input.durationMin,
       startedAt: input.startedAt,
       endedAt: input.endedAt,
       yieldRate: Number(input.yieldRate) || 0,

@@ -7,6 +7,7 @@ import {
   ProfileOutlined,
   DashboardOutlined,
   DownloadOutlined,
+  SwapOutlined,
 } from '@ant-design/icons';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import { seedIfEmpty } from './utils/seed';
@@ -14,6 +15,7 @@ import { useHerbStore } from './stores/herbStore';
 import { useMethodStore } from './stores/methodStore';
 import { useBatchStore } from './stores/batchStore';
 import { useSampleStore } from './stores/sampleStore';
+import { useHandoverStore } from './stores/handoverStore';
 import { downloadText, exportBackupJson } from './utils/export';
 
 const { Header, Sider, Content, Footer } = Layout;
@@ -25,6 +27,7 @@ const MENU_ITEMS = [
   { key: '/methods', icon: <FireOutlined />, label: <Link to="/methods">炮制方法</Link> },
   { key: '/batches', icon: <ProfileOutlined />, label: <Link to="/batches">工序记录台</Link> },
   { key: '/samples', icon: <InboxOutlined />, label: <Link to="/samples">留样台账</Link> },
+  { key: '/handover', icon: <SwapOutlined />, label: <Link to="/handover">交接对账</Link> },
 ];
 
 /** 应用外壳：左侧导航 + 顶部导出备份，负责一次性的本地数据装载 */
@@ -35,6 +38,7 @@ export default function App() {
   const hydrateMethods = useMethodStore((s) => s.hydrate);
   const hydrateBatches = useBatchStore((s) => s.hydrate);
   const hydrateSamples = useSampleStore((s) => s.hydrate);
+  const hydrateHandovers = useHandoverStore((s) => s.hydrate);
   const location = useLocation();
 
   useEffect(() => {
@@ -42,7 +46,7 @@ export default function App() {
     (async () => {
       try {
         await seedIfEmpty();
-        await Promise.all([hydrateHerbs(), hydrateMethods(), hydrateBatches(), hydrateSamples()]);
+        await Promise.all([hydrateHerbs(), hydrateMethods(), hydrateBatches(), hydrateSamples(), hydrateHandovers()]);
       } catch (error) {
         message.error(`本地数据装载失败：${(error as Error).message}`);
       } finally {
@@ -54,7 +58,7 @@ export default function App() {
     return () => {
       alive = false;
     };
-  }, [hydrateHerbs, hydrateMethods, hydrateBatches, hydrateSamples, message]);
+  }, [hydrateHerbs, hydrateMethods, hydrateBatches, hydrateSamples, hydrateHandovers, message]);
 
   const selectedKey = MENU_ITEMS.map((item) => item.key)
     .filter((key) => (key === '/' ? location.pathname === '/' : location.pathname.startsWith(key)))

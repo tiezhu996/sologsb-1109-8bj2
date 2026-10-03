@@ -54,7 +54,13 @@ export function downloadCsv<T extends Record<string, unknown>>(filename: string,
   downloadText(filename, `\ufeff${header}\n${body}`, 'text/csv');
 }
 
-/** 恢复 JSON 备份 */
+/**
+ * 恢复 JSON 备份（危险：会清空本机四张台账后整库覆盖）。
+ *
+ * 平板交接包请勿走这里——日常交接一律使用「交接对账」页的可续接增量对账
+ * （stager 暂存 → 按批号/留样编号续接写入 → 两版复核），断网可续、成功项不重复、
+ * 锁定结果不覆盖。此函数仅保留给 schema 迁移/故障恢复等明确需要整库还原的场景。
+ */
 export async function importBackup(text: string): Promise<{ herbs: number; methods: number; batches: number; samples: number }> {
   const payload = JSON.parse(text) as Partial<BackupPayload>;
   if (!payload || payload.app !== 'gbherbprocess') {

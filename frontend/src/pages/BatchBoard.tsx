@@ -131,8 +131,8 @@ export default function BatchBoard() {
       auxUsedKg: record.auxUsedKg,
       outputKg: Number(((record.feedKg * record.yieldRate) / 100).toFixed(1)),
       fireLevel: record.fireLevel,
-      temp: suggested ? Math.round((suggested.tempRange[0] + suggested.tempRange[1]) / 2) : 100,
-      duration: suggested?.duration ?? 12,
+      temp: record.potTempC ?? (suggested ? Math.round((suggested.tempRange[0] + suggested.tempRange[1]) / 2) : 100),
+      duration: record.durationMin ?? suggested?.duration ?? 12,
       startedAt: dayjs(record.startedAt),
       endedAt: dayjs(record.endedAt),
       operator: record.operator,
@@ -158,6 +158,8 @@ export default function BatchBoard() {
       feedKg,
       auxUsedKg: Number(values.auxUsedKg) || 0,
       fireLevel: values.fireLevel,
+      potTempC: Number(values.temp) || undefined,
+      durationMin: Number(values.duration) || undefined,
       startedAt: values.startedAt.toISOString(),
       endedAt: values.endedAt.toISOString(),
       yieldRate,
@@ -189,8 +191,17 @@ export default function BatchBoard() {
     {
       title: '火候',
       dataIndex: 'fireLevel',
-      width: 180,
-      render: (v: FireLevel, record) => <FireLevelTag level={v} tempRange={methodOf(record.methodId)?.tempRange} duration={methodOf(record.methodId)?.duration} />,
+      width: 220,
+      render: (v: FireLevel, record) => (
+        <Space size={6}>
+          <FireLevelTag level={v} tempRange={methodOf(record.methodId)?.tempRange} duration={methodOf(record.methodId)?.duration} />
+          {record.potTempC !== undefined || record.durationMin !== undefined ? (
+            <Text type="secondary" style={{ fontSize: 12, whiteSpace: 'nowrap' }}>
+              实测 {record.potTempC ?? '—'}℃ · {record.durationMin ?? '—'}min
+            </Text>
+          ) : null}
+        </Space>
+      ),
     },
     { title: '投料(kg)', dataIndex: 'feedKg', width: 90, align: 'right' },
     { title: '辅料(kg)', dataIndex: 'auxUsedKg', width: 90, align: 'right' },

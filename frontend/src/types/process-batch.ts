@@ -18,6 +18,10 @@ export interface ProcessBatch {
   auxUsedKg: number;
   /** 火候 */
   fireLevel: FireLevel;
+  /** 实际锅温（℃），旧版交接包可能缺省 */
+  potTempC?: number;
+  /** 实际炮制时长（min），旧版交接包可能缺省，缺省时可由起止时间推导 */
+  durationMin?: number;
   /** 开始时间 ISO */
   startedAt: string;
   /** 结束时间 ISO */
